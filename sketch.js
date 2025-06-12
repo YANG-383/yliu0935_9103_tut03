@@ -42,9 +42,10 @@ const dotRingColorMap = {
 let dotRingNoiseOffset = 0; 
 // Interaction 1: controls the Perlin noise offset for ChainLink color animation
 let chainNoiseOffset = 0;
-
 // Interaction 2: controls the Perlin noise offset for PinkCurveSet animation
 let pinkCurveNoiseOffset = 0;
+// Interaction 3: controls the Perlin noise offset for SpokeRing length animation
+let spokeNoiseOffset = 0;
 
 function preload() {
   //referenceImg = loadImage('image/Group_Pic.jpg');
@@ -90,6 +91,8 @@ function draw() {
   chainNoiseOffset += 0.008;
   // Interaction 2: to control the speed of PinkCurveSet animation
   pinkCurveNoiseOffset += 0.01;
+  // Interaction 3: to control the speed of SpokeRing length animation
+  spokeNoiseOffset += 0.007;
 
   //draw each part array
   for (let basicCircle of basicCircles) {
@@ -478,6 +481,9 @@ class SpokeRing {//set spoke ring logic
     this.nSpikes = nSpikes;
     this.sw = sw;
     this.col = col;
+    // Interaction 3: Store original radii for dynamic adjustments
+    this.originalInnerR = innerR;
+    this.originalOuterR = outerR;
   }
 
   display() {//Set up drawing style
@@ -500,10 +506,21 @@ class SpokeRing {//set spoke ring logic
     beginShape();
     for (let i = 0; i < totalVerts; i++) {
       const ang = i * step;
+
+      // Interaction 3: Calculate dynamic radii based on Perlin noise
+      let noiseVal = noise(spokeNoiseOffset + ang * 0.5);
+      let currentInnerR = this.originalInnerR * (1 + map(noiseVal, 0, 1, -0.3, 0.3));
+      let currentOuterR = this.originalOuterR * (1 + map(noiseVal, 0, 1, -0.2, 0.2));
+      // Interaction 3: Ensure radii are within reasonable limits
+      currentInnerR = max(currentInnerR, 5);
+      currentOuterR = max(currentOuterR, currentInnerR + 5);
+
       const radius =
         i % 2 === 0
-          ? this.outerR - outerOffset
-          : this.innerR + innerOffset;
+          ? currentOuterR - outerOffset // Using dynamic outerR
+          : currentInnerR + innerOffset; // Using dynamic innerR
+
+
 // When thinking about how to implement this complex code, 
 // We learned about the vertex() code through a conversation with chatgpt. 
 // When searching the p5.js related website, 
