@@ -38,6 +38,10 @@ const dotRingColorMap = {
   "335,530" : "#F23C32",
   "480,510" : "#5CC272"
 };
+// Interaction 1: controls the Perlin noise offset for DotRing color animation
+let dotRingNoiseOffset = 0; 
+// Interaction 1: controls the Perlin noise offset for ChainLink color animation
+let chainNoiseOffset = 0;
 
 function preload() {
   //referenceImg = loadImage('image/Group_Pic.jpg');
@@ -46,7 +50,7 @@ function preload() {
 function setup() {
   createCanvas(imgSize * 2 + padding, imgSize);
   //referenceImg.resize(imgSize, imgSize); // make both 500
-  noLoop();
+  // Interaction 1:Removed or commented out noLoop() to allow the draw() function to execute continuously
 
   //set circle and its decoration
   setupCircle();
@@ -77,6 +81,11 @@ function draw() {
   fill('#2D5574');
   rect(0, 0, imgSize, imgSize);
 
+  // Interaction 1:to control the speed of DotRing colors.
+  dotRingNoiseOffset += 0.008;
+  // Interaction 1:to control the speed of ChainLink colors.
+  chainNoiseOffset += 0.008;
+
   //draw each part array
   for (let basicCircle of basicCircles) {
     basicCircle.display();
@@ -102,7 +111,7 @@ function draw() {
   fill(255);
   rect(imgSize, 0, padding, imgSize);  
   
-  //Reference pic
+  // Reference pic
   //image(referenceImg, imgSize + padding, 0);
 
 }
@@ -389,12 +398,13 @@ class DotRing {//set dot circle logic
     this.rows = rows;
     this.dotDiam = dotDiam;
     this.col = col;
+    //Interaction 1:Store the original color to be used as a base for color variations.
+    this.originalColor = color(col); 
   }
 
   display() { //set what look like
     push();
     noStroke();
-    fill(this.col);
 
     for (let i = 0; i < this.rows; i++) {
       // The radius of the current circle
@@ -403,6 +413,25 @@ class DotRing {//set dot circle logic
         this.outerR - this.dotDiam * 0.5,
         i / (this.rows - 1)
       );
+
+      // Interaction 1:Calculate Perlin noise input
+      let noiseSeed = dotRingNoiseOffset + (r / this.outerR) * 0.7; 
+      let noiseVal = noise(noiseSeed);
+      // Interaction 1: Let noise value to a larger color component modulation range
+      let colorMod = map(noiseVal, 0, 1, -255, 255); 
+
+      // Interaction 1: Get original color's RGB components and apply the color modulation
+      let rVal = red(this.originalColor) + colorMod;
+      let gVal = green(this.originalColor) + colorMod;
+      let bVal = blue(this.originalColor) + colorMod;
+
+      // Interaction 1: Constrain RGB values to ensure they stay within the 0-255 range
+      rVal = constrain(rVal, 0, 255);
+      gVal = constrain(gVal, 0, 255);
+      bVal = constrain(bVal, 0, 255);
+
+      // Interaction 1: Fill the dot with the newly calculated color
+      fill(rVal, gVal, bVal);
 
       // Calculate how many points are needed in this circle based on the circumference
       const numDots = floor((TWO_PI * r) / (this.dotDiam * 1.6));
@@ -506,7 +535,22 @@ class ChainLink {
       rotate(dir.heading());
       stroke('#D26728');
       strokeWeight(1.5);
-      fill(random(255), random(255), random(255));
+
+      // Interaction 1:Temporarily switch to HSB color mode to generate richer, more varied colors.
+      colorMode(HSB, 360, 100, 100); 
+
+      // Interaction 1: Generate smoothly changing colors for each small circle
+      // Interaction 1: Use the global chain noise offset and the current small circle's index
+      let hNoise = noise(chainNoiseOffset + i * 0.1 ); 
+      let sNoise = noise(chainNoiseOffset + i * 0.1 + 2000);
+      let bNoise = noise(chainNoiseOffset + i * 0.1 + 2000); 
+      // Map noise values to HSB ranges
+      let hVal = map(hNoise, 0, 1, 0, 360);
+      let sVal = map(sNoise, 0, 1, 70, 100);
+      let bVal = map(bNoise, 0, 1, 80, 100);
+
+      fill(hVal, sVal, bVal); 
+
       ellipse(0, 0, ellipseWidth, this.thickness);//The course did not mention elliptic functions in detail,
       //but p5 actually provides them and they are used similarly to circle or other graphic functions.
       pop();
@@ -525,4 +569,3 @@ class ChainLink {
     fill(255);
     circle(p.x, p.y, 10);
   }
-}
