@@ -43,6 +43,9 @@ let dotRingNoiseOffset = 0;
 // Interaction 1: controls the Perlin noise offset for ChainLink color animation
 let chainNoiseOffset = 0;
 
+// Interaction 2: controls the Perlin noise offset for PinkCurveSet animation
+let pinkCurveNoiseOffset = 0;
+
 function preload() {
   //referenceImg = loadImage('image/Group_Pic.jpg');
 }
@@ -85,6 +88,8 @@ function draw() {
   dotRingNoiseOffset += 0.008;
   // Interaction 1:to control the speed of ChainLink colors.
   chainNoiseOffset += 0.008;
+  // Interaction 2: to control the speed of PinkCurveSet animation
+  pinkCurveNoiseOffset += 0.01;
 
   //draw each part array
   for (let basicCircle of basicCircles) {
@@ -100,11 +105,7 @@ function draw() {
   
   for (let ch of chains) ch.display();
 
-  for (let pair of pinkCurveSet.curvePairs) {
-    pinkCurveSet.drawPinkCurve(pair[0], pair[1]);
-  }
-
-  
+  pinkCurveSet.display();
 
   // blank area
   noStroke();
@@ -208,6 +209,7 @@ function setupPinkCurveSet() {//set pink curve pos
     [[428, 242], [496, 180]],
     [[ 80, 458], [176, 481]]
   ];
+
   pinkCurveSet = new PinkCurveSet(curvePairs, 35);
 }
 
@@ -339,8 +341,20 @@ class PinkCurveSet {//set pink curve log
     this.offset     = offset; //point vertical offset
   }
 
+  // Interaction 2: Add a display method to traverse and draw all curves
+  display() {
+    for (let i = 0; i < this.curvePairs.length; i++) {
+      const pair = this.curvePairs[i];
+      // Interaction 2: Calculate a offset for each curve
+      let noiseVal = noise(pinkCurveNoiseOffset + i * 0.1); 
+      let dynamicOffset = map(noiseVal, 0, 1, -this.offset * 1.5, this.offset * 1.5);
+      this.drawPinkCurve(pair[0], pair[1], dynamicOffset);
+    }
+  }
+
   //Draw pink curve between two points using quadratic curve
-  drawPinkCurve(start, end) {
+  // Interaction 2: Modify the drawPinkCurve method to receive dynamic offset
+  drawPinkCurve(start, end, dynamicOffset) {
     const [x1, y1] = start;
     const [x4, y4] = end;
     const midX = (x1 + x4) / 2;
@@ -355,9 +369,10 @@ class PinkCurveSet {//set pink curve log
 
     //Compute pos to define curve bending
     const key = `${x1},${y1},${x4},${y4}`;
-    const dir = downSet.has(key) ? +this.offset : -this.offset;
+    // Interaction 2: Replace this.offset with dynamicOffset
+    const dir = downSet.has(key) ? +dynamicOffset : -dynamicOffset;
     const ctrlY = midY + dir;
-    const ctrlX = midX - Math.sign(x4 - x1) * this.offset;
+    const ctrlX = midX - Math.sign(x4 - x1) * dynamicOffset * 0.2; 
 
     //using quadraticVertex
     // WE learned about this code through interaction with the teacher in class,
@@ -569,3 +584,4 @@ class ChainLink {
     fill(255);
     circle(p.x, p.y, 10);
   }
+}
