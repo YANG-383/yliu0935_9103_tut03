@@ -48,7 +48,7 @@ function setup() {
   //referenceImg.resize(imgSize, imgSize); // make both 500
   noLoop();
 
-  // set circle and its decoration
+  //set circle and its decoration
   setupCircle();
   setupDotRings();
   setupInnerDotRings()
@@ -102,7 +102,7 @@ function draw() {
   fill(255);
   rect(imgSize, 0, padding, imgSize);  
   
-  // Reference pic
+  //Reference pic
   //image(referenceImg, imgSize + padding, 0);
 
 }
@@ -140,6 +140,7 @@ function setupDotRings() {//Dot set for main area
   //Traverse all basic circles and generate DotRing
   for (const bc of basicCircles) { 
     if (skip.has(bc.x + ',' + bc.y)) continue;
+    //The Continue statement can skip the loop and enter the next loop. 
 
     //According to map to set each position's color
     const col = dotRingColorMap[bc.x + ',' + bc.y];
@@ -350,6 +351,11 @@ class PinkCurveSet {//set pink curve log
     const ctrlX = midX - Math.sign(x4 - x1) * this.offset;
 
     //using quadraticVertex
+    // WE learned about this code through interaction with the teacher in class,
+    //  and decided to use it after checking the p5.js website and interacting with chatgpt. 
+    // The principle itself is to use two coordinates for the starting point,
+    //  two coordinates for the stretching position, 
+    // and two coordinates for the end point.
     push();
     stroke(255, 28, 90);
     strokeWeight(5);
@@ -401,8 +407,9 @@ class DotRing {//set dot circle logic
       // Calculate how many points are needed in this circle based on the circumference
       const numDots = floor((TWO_PI * r) / (this.dotDiam * 1.6));
 
-      for (let j = 0; j < numDots; j++) {
-        const ang = (TWO_PI * j) / numDots;
+      for (let j = 0; j < numDots; j++) { //the calculated function was help by chatgpt
+        const ang = (TWO_PI * j) / numDots; //Calculate the angle of each point to ensure equal spacing
+        //Calculate the position by using polar coordinates to Cartesian coordinates
         const dx = this.x + r * cos(ang);
         const dy = this.y + r * sin(ang);
         circle(dx, dy, this.dotDiam);
@@ -453,7 +460,12 @@ class SpokeRing {//set spoke ring logic
         i % 2 === 0
           ? this.outerR - outerOffset
           : this.innerR + innerOffset;
-
+// When thinking about how to implement this complex code, 
+// We learned about the vertex() code through a conversation with chatgpt. 
+// When searching the p5.js related website, 
+// I found that this is a good choice. 
+// By calculating the arc, the coordinates of each vertex can
+// be obtained to form a perfect spoke pattern.
       vertex(
         this.x + radius * cos(ang),
         this.y + radius * sin(ang)
@@ -495,7 +507,8 @@ class ChainLink {
       stroke('#D26728');
       strokeWeight(1.5);
       fill(random(255), random(255), random(255));
-      ellipse(0, 0, ellipseWidth, this.thickness);
+      ellipse(0, 0, ellipseWidth, this.thickness);//The course did not mention elliptic functions in detail,
+      //but p5 actually provides them and they are used similarly to circle or other graphic functions.
       pop();
     }
     // draw anchor dots at both ends
