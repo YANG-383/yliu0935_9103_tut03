@@ -22,9 +22,9 @@ const dotRingColorMap = {
   "71,64"   : "#231775",
   "366,-3"  : "#F11006",
 //line two
-  "19,204"  : "#231775", 
-  "169,177" : "#177822", 
-  "319,137" : "#CC90DF", 
+  "19,204"  : "#231775",
+  "169,177" : "#177822",
+  "319,137" : "#CC90DF",
   "475,101" : "#073575",
 //line three
   "-20,353" : "#0C9482", 
@@ -39,13 +39,18 @@ const dotRingColorMap = {
   "480,510" : "#5CC272"
 };
 // Interaction 1: controls the Perlin noise offset for DotRing color animation
-let dotRingNoiseOffset = 0; 
+let dotRingNoiseOffset = 0;
 // Interaction 1: controls the Perlin noise offset for ChainLink color animation
 let chainNoiseOffset = 0;
+
 // Interaction 2: controls the Perlin noise offset for PinkCurveSet animation
 let pinkCurveNoiseOffset = 0;
+
 // Interaction 3: controls the Perlin noise offset for SpokeRing length animation
 let spokeNoiseOffset = 0;
+
+// Interaction 4: controls the Perlin noise offset for DotRing size animation
+let dotRingSizeNoiseOffset = 0; // Added for dot size animation
 
 function preload() {
   //referenceImg = loadImage('image/Group_Pic.jpg');
@@ -65,7 +70,7 @@ function setup() {
   setupPinkCurveSet();
   //set chain
   setupChains();
-  
+
 }
 
 //window resize
@@ -93,6 +98,8 @@ function draw() {
   pinkCurveNoiseOffset += 0.01;
   // Interaction 3: to control the speed of SpokeRing length animation
   spokeNoiseOffset += 0.007;
+  // Interaction 4: to control the speed of DotRing size animation
+  dotRingSizeNoiseOffset += 0.008;
 
   //draw each part array
   for (let basicCircle of basicCircles) {
@@ -105,7 +112,7 @@ function draw() {
   for (const sr of spokeRings) sr.display();
 
   for (let rf of ringFills) rf.display();
-  
+
   for (let ch of chains) ch.display();
 
   pinkCurveSet.display();
@@ -113,8 +120,8 @@ function draw() {
   // blank area
   noStroke();
   fill(255);
-  rect(imgSize, 0, padding, imgSize);  
-  
+  rect(imgSize, 0, padding, imgSize);
+
   // Reference pic
   //image(referenceImg, imgSize + padding, 0);
 
@@ -123,7 +130,7 @@ function draw() {
 //Set function for each part
 function setupCircle(){ // basic circle positon, core color and main color set
 //layout reference up to down, left to right
-//line one 
+//line one
   basicCircles.push(new BasicCircle(71, 64, 0, 'w'));
   basicCircles.push(new BasicCircle(217, 27, 0 ));
   basicCircles.push(new BasicCircle(366, -3, 0, 'w'));
@@ -151,9 +158,9 @@ function setupDotRings() {//Dot set for main area
   const skip = new Set(['217,27', '125,318', '515,367']); //skip drawing these position
 
   //Traverse all basic circles and generate DotRing
-  for (const bc of basicCircles) { 
+  for (const bc of basicCircles) {
     if (skip.has(bc.x + ',' + bc.y)) continue;
-    //The Continue statement can skip the loop and enter the next loop. 
+    //The Continue statement can skip the loop and enter the next loop
 
     //According to map to set each position's color
     const col = dotRingColorMap[bc.x + ',' + bc.y];
@@ -349,7 +356,7 @@ class PinkCurveSet {//set pink curve log
     for (let i = 0; i < this.curvePairs.length; i++) {
       const pair = this.curvePairs[i];
       // Interaction 2: Calculate a offset for each curve
-      let noiseVal = noise(pinkCurveNoiseOffset + i * 0.1); 
+      let noiseVal = noise(pinkCurveNoiseOffset + i * 0.1);
       let dynamicOffset = map(noiseVal, 0, 1, -this.offset * 1.5, this.offset * 1.5);
       this.drawPinkCurve(pair[0], pair[1], dynamicOffset);
     }
@@ -417,7 +424,23 @@ class DotRing {//set dot circle logic
     this.dotDiam = dotDiam;
     this.col = col;
     //Interaction 1:Store the original color to be used as a base for color variations.
-    this.originalColor = color(col); 
+    this.originalColor = color(col);
+    // Interaction 4: Store original dot diameter for dynamic adjustments
+    this.originalDotDiam = dotDiam;
+    this.fixedNumDotsPerRow = [];
+
+    // Calculate and fix the number of dots for each row during setup.
+    for (let i = 0; i < this.rows; i++) {
+        const baseR = lerp(
+            this.innerR + this.dotDiam * 0.5,
+            this.outerR - this.dotDiam * 0.6,
+            i / (this.rows - 1)
+        );
+        // This ensures the initial distribution of dots is as intended.
+        const calculatedNumDots = floor((TWO_PI * baseR) / (this.originalDotDiam * 1.6));
+        // Store this calculated number, making it constant for this row.
+        this.fixedNumDotsPerRow.push(calculatedNumDots);
+    }
   }
 
   display() { //set what look like
@@ -425,18 +448,18 @@ class DotRing {//set dot circle logic
     noStroke();
 
     for (let i = 0; i < this.rows; i++) {
-      // The radius of the current circle
-      const r = lerp(
+      // The base radius of the current circle. This remains constant for dot positioning.
+      const baseR = lerp(
         this.innerR + this.dotDiam * 0.5,
         this.outerR - this.dotDiam * 0.5,
         i / (this.rows - 1)
       );
 
       // Interaction 1:Calculate Perlin noise input
-      let noiseSeed = dotRingNoiseOffset + (r / this.outerR) * 0.7; 
-      let noiseVal = noise(noiseSeed);
+      let noiseSeedColor = dotRingNoiseOffset + (baseR / this.outerR) * 0.7;
+      let noiseValColor = noise(noiseSeedColor);
       // Interaction 1: Let noise value to a larger color component modulation range
-      let colorMod = map(noiseVal, 0, 1, -255, 255); 
+      let colorMod = map(noiseValColor, 0, 1, -255, 255);
 
       // Interaction 1: Get original color's RGB components and apply the color modulation
       let rVal = red(this.originalColor) + colorMod;
@@ -451,15 +474,21 @@ class DotRing {//set dot circle logic
       // Interaction 1: Fill the dot with the newly calculated color
       fill(rVal, gVal, bVal);
 
-      // Calculate how many points are needed in this circle based on the circumference
-      const numDots = floor((TWO_PI * r) / (this.dotDiam * 1.6));
+      let sizeNoiseSeed = dotRingSizeNoiseOffset + (baseR / this.outerR) * 1.0 + i * 0.5;
+      let sizeNoiseVal = noise(sizeNoiseSeed);
+      // This creates a rhythmic pulsation in the size of the dots.
+      let currentDotDiam = map(sizeNoiseVal, 0, 1, this.originalDotDiam * 0.5, this.originalDotDiam * 1.5);
 
-      for (let j = 0; j < numDots; j++) { //the calculated function was help by chatgpt
-        const ang = (TWO_PI * j) / numDots; //Calculate the angle of each point to ensure equal spacing
-        //Calculate the position by using polar coordinates to Cartesian coordinates
-        const dx = this.x + r * cos(ang);
-        const dy = this.y + r * sin(ang);
-        circle(dx, dy, this.dotDiam);
+      // ensuring it remains constant for each ring irrespective of current dot size.
+      const numDots = this.fixedNumDotsPerRow[i]; // Modified: Use the pre-calculated fixed number of dots.
+
+      for (let j = 0; j < numDots; j++) {
+        // Calculate the angle of each point to ensure equal spacing around the baseR.
+        const ang = (TWO_PI * j) / numDots;
+        // always using `baseR` to keep dots on their fixed radial path.
+        const dx = this.x + baseR * cos(ang);
+        const dy = this.y + baseR * sin(ang);
+        circle(dx, dy, currentDotDiam); // Uses currentDotDiam for the dot's size.
       }
     }
     pop();
@@ -520,11 +549,10 @@ class SpokeRing {//set spoke ring logic
           ? currentOuterR - outerOffset // Using dynamic outerR
           : currentInnerR + innerOffset; // Using dynamic innerR
 
-
-// When thinking about how to implement this complex code, 
-// We learned about the vertex() code through a conversation with chatgpt. 
-// When searching the p5.js related website, 
-// I found that this is a good choice. 
+// When thinking about how to implement this complex code,
+// We learned about the vertex() code through a conversation with chatgpt.
+// When searching the p5.js related website,
+// I found that this is a good choice.
 // By calculating the arc, the coordinates of each vertex can
 // be obtained to form a perfect spoke pattern.
       vertex(
